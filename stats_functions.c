@@ -330,7 +330,9 @@ void refresh23(int samples, int tdelay){
         printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
         read(machine_pipe[READ_END], &info, sizeof(info));
         printf("### Sessions/users ### \n");
-        printf("%s", info.users[i]);
+        for (int j = 0; j < info.num_users; j++) {
+            printf("%s", info.users[j]);
+        }
     //     // Read memory utilization result from pipe and print it
     //     read(memory_pipe[READ_END], &mem_info, sizeof(mem_info_t));
     //     // ...
