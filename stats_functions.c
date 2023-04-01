@@ -290,7 +290,7 @@ void refresh23(int samples, int tdelay){
             printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
             printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
             
-            sleep(tdelay);
+            //sleep(tdelay);
         }
         close(machine_pipe[READ_END]);
         close(memory_pipe[READ_END]);
