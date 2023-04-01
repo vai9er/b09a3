@@ -277,8 +277,8 @@ void refresh23(int samples, int tdelay){
     } else {
         // Parent process
         struct session_info info;
+        close(machine_pipe[WRITE_END]);
         for (int i = 0; i < samples; i++) {
-            close(machine_pipe[WRITE_END]);
             read(machine_pipe[READ_END], &info, sizeof(info));
             printf("### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
