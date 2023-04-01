@@ -224,6 +224,28 @@ void logSessional(int machine_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
     close(machine_pipe[WRITE_END]);
 }
 
+void printMemUsage(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
+    //step 1: get system information
+    struct sysinfo systemInfo;
+    sysinfo(&systemInfo);
+    
+    // Get total and used memory
+    float memory_total = systemInfo.totalram;
+    float memory_used = systemInfo.totalram - systemInfo.freeram;
+
+    // Print memory usage in kilobytes
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+
+    // Print memory usage in kilobytes
+    long memory_usage_kb = usage.ru_maxrss;
+
+    for (int i = 0; i < NUM_SAMPLES; i++) {
+        struct mem_info info = {memory_usage_kb, memory_used, memory_total};
+        write(pipefd[1], &info, sizeof(info));
+        sleep(SLEEP_TIME);
+    }
+}
 
 void refresh23(int samples, int tdelay){
     int machine_pipe[2];
