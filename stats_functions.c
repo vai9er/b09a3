@@ -313,10 +313,10 @@ void refresh23(int samples, int tdelay){
     }
 
     // Parent process
-    close(memory_pipe[WRITE_END]);
-    close(users_pipe[WRITE_END]);
-    close(machine_pipe[WRITE_END]);
-    close(cpu_pipe[WRITE_END]);
+    // close(memory_pipe[WRITE_END]);
+    // close(users_pipe[WRITE_END]);
+    // close(machine_pipe[WRITE_END]);
+    // close(cpu_pipe[WRITE_END]);
 
 
     // Read results from pipes and print them
