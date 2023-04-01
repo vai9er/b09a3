@@ -190,58 +190,40 @@ double get_cpu_utilization2() {
 
 //this function prints the users and sessions using the utmp file
 //the utmp file is a file that stores information about the users and sessions
-void logSessional(int machine_pipe[2]){
+void logSessional(int machine_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
     // Machine child process
     close(machine_pipe[READ_END]);
 
-    // Perform machine information task and write results to pipe
-    struct session_info info;
-    info.num_users = 0;
+    for (int i = 0; i < NUM_SAMPLES; i++) {
+        // Perform machine information task and write results to pipe
+        struct session_info info;
+        info.num_users = 0;
 
-    // get sessional information
-    struct utmp *userSession;
+        // get sessional information
+        struct utmp *userSession;
 
-    //open file
-    setutent();
+        //open file
+        setutent();
 
-    //print the sessions
-    while ( (userSession = getutent()) != NULL) {
-        if (userSession->ut_type == USER_PROCESS) {
-            sprintf(info.users[info.num_users], " %s   %s (%s)\n", userSession->ut_user, userSession->ut_line, userSession->ut_host);
-            info.num_users++;
+        //print the sessions
+        while ( (userSession = getutent()) != NULL) {
+            if (userSession->ut_type == USER_PROCESS) {
+                sprintf(info.users[info.num_users], " %s   %s (%s)\n", userSession->ut_user, userSession->ut_line, userSession->ut_host);
+                info.num_users++;
+            }
         }
+
+        //close file
+        endutent();
+
+        write(machine_pipe[WRITE_END], &info, sizeof(info));
+        
+        sleep(SLEEP_TIME);
     }
-
-    //close file
-    endutent();
-
-    write(machine_pipe[WRITE_END], &info, sizeof(info));
 
     close(machine_pipe[WRITE_END]);
 }
 
-void printMemUsage(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
-    //step 1: get system information
-    struct sysinfo systemInfo;
-    sysinfo(&systemInfo);
-    
-    // Get total and used memory
-    float memory_total = systemInfo.totalram;
-    float memory_used = systemInfo.totalram - systemInfo.freeram;
-
-    // Print memory usage in kilobytes
-    struct rusage usage;
-    getrusage(RUSAGE_SELF, &usage);
-
-    // Print memory usage in kilobytes
-    long memory_usage_kb = usage.ru_maxrss;
-
-    for (int i = 0; i < NUM_SAMPLES; i++) {
-        struct mem_info info = {memory_usage_kb, memory_used, memory_total};
-        write(pipefd[1], &info, sizeof(info));
-        sleep(SLEEP_TIME);
-    }
-}
 
 void refresh23(int samples, int tdelay){
     int machine_pipe[2];
@@ -259,7 +241,7 @@ void refresh23(int samples, int tdelay){
         fprintf(stderr,"Fork failed");
         exit(EXIT_FAILURE);
     } else if (machine_pid == 0) {
-        logSessional(machine_pipe);
+        logSessional(machine_pipe, samples, tdelay);
         exit(EXIT_SUCCESS);
     }
 
@@ -278,6 +260,7 @@ void refresh23(int samples, int tdelay){
         // Parent process
         struct session_info info;
         close(machine_pipe[WRITE_END]);
+        
         for (int i = 0; i < samples; i++) {
             read(machine_pipe[READ_END], &info, sizeof(info));
             printf("### Sessions/users ### \n");
@@ -290,8 +273,9 @@ void refresh23(int samples, int tdelay){
             printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
             printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
             
-            //sleep(tdelay);
+            sleep(tdelay);
         }
+        
         close(machine_pipe[READ_END]);
         close(memory_pipe[READ_END]);
     }
