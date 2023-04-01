@@ -327,12 +327,20 @@ void refresh23(int samples, int tdelay){
     char machine[1024];
 
     for (int i = 0; i < samples; i++) {
-        printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
-        read(machine_pipe[READ_END], &info, sizeof(info));
-        printf("### Sessions/users ### \n");
-        for (int j = 0; j < info.num_users; j++) {
-            printf("%s", info.users[j]);
+            close(machine_pipe[WRITE_END]);
+            read(machine_pipe[READ_END], &info, sizeof(info));
+            printf("### Sessions/users ### \n");
+            for (int j = 0; j < info.num_users; j++) {
+                printf("%s", info.users[j]);
+            }
+            sleep(tdelay);
         }
+        close(machine_pipe[READ_END]);
+}
+        //PUT CODDE HERE
+
+        //printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
+
     //     // Read memory utilization result from pipe and print it
     //     read(memory_pipe[READ_END], &mem_info, sizeof(mem_info_t));
     //     // ...
@@ -359,9 +367,6 @@ void refresh23(int samples, int tdelay){
     //         printf(" %.2f\n", cpu_utilization.utilization);
     //     } else {
     //         printf("\t %.2f\n", cpu_utilization.utilization);
-    // }
+    //}
 
-        //sleep(tdelay);
-    }
-}
 
