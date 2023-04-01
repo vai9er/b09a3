@@ -2,6 +2,7 @@
 #define PROC_STAT "/proc/stat"
 #define READ_END 0
 #define WRITE_END 1
+#define MAX_USERS 100
 
 typedef struct {
     double utilization;
@@ -12,6 +13,10 @@ typedef struct {
     float prev_memory_used;
 } mem_info_t;
 
+struct session_info {
+    char users[MAX_USERS][100];
+    int num_users;
+};
 
 void printMemUsage( int NUM_SAMPLES, int SLEEP_TIME) {
     printf("Number of samples: %d -- every %d secs\n", NUM_SAMPLES, SLEEP_TIME);
@@ -207,17 +212,13 @@ double get_cpu_utilization2() {
 
 //this function prints the users and sessions using the utmp file
 //the utmp file is a file that stores information about the users and sessions
-void logSessional(struct utmp *userSession){
-    //print the sessions
-    while ( (userSession = getutent()) != NULL) {
-        if (userSession->ut_type == USER_PROCESS) printf(" %s   %s (%s)\n", userSession->ut_user, userSession->ut_line, userSession->ut_host);
-    }
-}
+void logSessional(int machine_pipe[2]){
+    // Machine child process
+    close(machine_pipe[READ_END]);
 
-
-//this function prints the users and sessions using the utmp file and the getutent() function
-void printUsers(){
-    printf("### Sessions/users ### \n");
+    // Perform machine information task and write results to pipe
+    struct session_info info;
+    info.num_users = 0;
 
     // get sessional information
     struct utmp *userSession;
@@ -225,10 +226,20 @@ void printUsers(){
     //open file
     setutent();
 
-    logSessional(userSession);
+    //print the sessions
+    while ( (userSession = getutent()) != NULL) {
+        if (userSession->ut_type == USER_PROCESS) {
+            sprintf(info.users[info.num_users], " %s   %s (%s)\n", userSession->ut_user, userSession->ut_line, userSession->ut_host);
+            info.num_users++;
+        }
+    }
 
     //close file
     endutent();
+
+    write(machine_pipe[WRITE_END], &info, sizeof(info));
+
+    close(machine_pipe[WRITE_END]);
 }
 
 void refresh23(int samples, int tdelay){
@@ -274,11 +285,7 @@ void refresh23(int samples, int tdelay){
         exit(EXIT_FAILURE);
     } else if (machine_pid == 0) {
         // Machine child process
-        close(machine_pipe[READ_END]);
-        // Perform machine information task and write results to pipe
-        // ...
-        
-        close(machine_pipe[WRITE_END]);
+        logSessional(machine_pipe);
         exit(EXIT_SUCCESS);
     }
 
@@ -313,6 +320,7 @@ void refresh23(int samples, int tdelay){
 
 
     // Read results from pipes and print them
+    struct session_info info;
     cpu_sample_t cpu_utilization;
     mem_info_t mem_info;
     char users[1024];
@@ -320,34 +328,36 @@ void refresh23(int samples, int tdelay){
 
     for (int i = 0; i < samples; i++) {
         printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
+        read(machine_pipe[READ_END], &info, sizeof(info));
+        printf("### Sessions/users ### \n");
+        printf("%s", info.users[i]);
+    //     // Read memory utilization result from pipe and print it
+    //     read(memory_pipe[READ_END], &mem_info, sizeof(mem_info_t));
+    //     // ...
+    //     // printMemoryUtilization(...);
 
-        // Read memory utilization result from pipe and print it
-        read(memory_pipe[READ_END], &mem_info, sizeof(mem_info_t));
-        // ...
-        // printMemoryUtilization(...);
+    //     // Read connected users result from pipe and print it
+    //     read(users_pipe[READ_END], users, sizeof(users));
+    //     printf("%s\n", users);
 
-        // Read connected users result from pipe and print it
-        read(users_pipe[READ_END], users, sizeof(users));
-        printf("%s\n", users);
+    //     // Read machine information result from pipe and print it
+    //     read(machine_pipe[READ_END], machine, sizeof(machine));
+    //     printf("%s\n", machine);
 
-        // Read machine information result from pipe and print it
-        read(machine_pipe[READ_END], machine, sizeof(machine));
-        printf("%s\n", machine);
-
-        // Read CPU utilization result from pipe and print it
-        read(cpu_pipe[READ_END], &cpu_utilization, sizeof(cpu_sample_t));
-        printf("Number of cores: %d \n", get_nprocs());
-        printf("total cpu use = %.2f%%\n", cpu_utilization.utilization);
+    //     // Read CPU utilization result from pipe and print it
+    //     read(cpu_pipe[READ_END], &cpu_utilization, sizeof(cpu_sample_t));
+    //     printf("Number of cores: %d \n", get_nprocs());
+    //     printf("total cpu use = %.2f%%\n", cpu_utilization.utilization);
     
-        if (cpu_utilization.num_bars > 0) {
-            printf("\t");
-            for (int j = 0; j < cpu_utilization.num_bars; j++) {
-                printf("|");
-            }
-            printf(" %.2f\n", cpu_utilization.utilization);
-        } else {
-            printf("\t %.2f\n", cpu_utilization.utilization);
-    }
+    //     if (cpu_utilization.num_bars > 0) {
+    //         printf("\t");
+    //         for (int j = 0; j < cpu_utilization.num_bars; j++) {
+    //             printf("|");
+    //         }
+    //         printf(" %.2f\n", cpu_utilization.utilization);
+    //     } else {
+    //         printf("\t %.2f\n", cpu_utilization.utilization);
+    // }
 
         sleep(tdelay);
     }
