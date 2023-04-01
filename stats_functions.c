@@ -243,40 +243,12 @@ void logSessional(int machine_pipe[2]){
 }
 
 void refresh23(int samples, int tdelay){
-    int memory_pipe[2], users_pipe[2], machine_pipe[2], cpu_pipe[2];
-    pid_t memory_pid, users_pid, machine_pid, cpu_pid;
+    int machine_pipe[2];
+    pid_t machine_pid;
 
-    if (pipe(memory_pipe) == -1 || pipe(users_pipe) == -1 || pipe(machine_pipe) == -1 || pipe(cpu_pipe) == -1) {
+    if (pipe(machine_pipe) == -1) {
         fprintf(stderr,"Pipe failed");
         exit(EXIT_FAILURE);
-    }
-
-    memory_pid = fork();
-    if (memory_pid < 0) {
-        fprintf(stderr,"Fork failed");
-        exit(EXIT_FAILURE);
-    } else if (memory_pid == 0) {
-        // Memory child process
-        mem_info_t mem_info[samples];
-        close(memory_pipe[READ_END]);
-        // Perform memory utilization task and write results to pipe
-        // ...
-        //write(memory_pipe[WRITE_END], &mem_info[i], sizeof(mem_info_t));
-        close(memory_pipe[WRITE_END]);
-        exit(EXIT_SUCCESS);
-    }
-
-    users_pid = fork();
-    if (users_pid < 0) {
-        fprintf(stderr,"Fork failed");
-        exit(EXIT_FAILURE);
-    } else if (users_pid == 0) {
-        // Users child process
-        close(users_pipe[READ_END]);
-        // Perform connected users task and write results to pipe
-        // ...
-        close(users_pipe[WRITE_END]);
-        exit(EXIT_SUCCESS);
     }
 
     machine_pid = fork();
@@ -284,49 +256,12 @@ void refresh23(int samples, int tdelay){
         fprintf(stderr,"Fork failed");
         exit(EXIT_FAILURE);
     } else if (machine_pid == 0) {
-        // Machine child process
         logSessional(machine_pipe);
         exit(EXIT_SUCCESS);
-    }
-
-    cpu_pid = fork();
-    if (cpu_pid < 0) {
-        fprintf(stderr,"Fork failed");
-        exit(EXIT_FAILURE);
-    } else if (cpu_pid == 0) {
-        // CPU child process
-        close(cpu_pipe[READ_END]);
-        
-        cpu_sample_t cpu_utilization[samples];
-        
+    } else {
+        // Parent process
+        struct session_info info;
         for (int i = 0; i < samples; i++) {
-            cpu_utilization[i].utilization = 100 * get_cpu_utilization(tdelay);
-            cpu_utilization[i].num_bars = (int)(cpu_utilization[i].utilization / 0.32);
-            
-            write(cpu_pipe[WRITE_END], &cpu_utilization[i], sizeof(cpu_sample_t));
-            sleep(tdelay);
-        }
-        
-        close(cpu_pipe[WRITE_END]);
-        
-        exit(EXIT_SUCCESS);
-    }
-
-    // Parent process
-    // close(memory_pipe[WRITE_END]);
-    // close(users_pipe[WRITE_END]);
-    // close(machine_pipe[WRITE_END]);
-    // close(cpu_pipe[WRITE_END]);
-
-
-    // Read results from pipes and print them
-    struct session_info info;
-    cpu_sample_t cpu_utilization;
-    mem_info_t mem_info;
-    char users[1024];
-    char machine[1024];
-
-    for (int i = 0; i < samples; i++) {
             close(machine_pipe[WRITE_END]);
             read(machine_pipe[READ_END], &info, sizeof(info));
             printf("### Sessions/users ### \n");
@@ -336,8 +271,104 @@ void refresh23(int samples, int tdelay){
             sleep(tdelay);
         }
         close(machine_pipe[READ_END]);
+    }
 }
-        //PUT CODDE HERE
+// void refresh23(int samples, int tdelay){
+//     int memory_pipe[2], users_pipe[2], machine_pipe[2], cpu_pipe[2];
+//     pid_t memory_pid, users_pid, machine_pid, cpu_pid;
+
+//     if (pipe(memory_pipe) == -1 || pipe(users_pipe) == -1 || pipe(machine_pipe) == -1 || pipe(cpu_pipe) == -1) {
+//         fprintf(stderr,"Pipe failed");
+//         exit(EXIT_FAILURE);
+//     }
+
+//     memory_pid = fork();
+//     if (memory_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (memory_pid == 0) {
+//         // Memory child process
+//         mem_info_t mem_info[samples];
+//         close(memory_pipe[READ_END]);
+//         // Perform memory utilization task and write results to pipe
+//         // ...
+//         //write(memory_pipe[WRITE_END], &mem_info[i], sizeof(mem_info_t));
+//         close(memory_pipe[WRITE_END]);
+//         exit(EXIT_SUCCESS);
+//     }
+
+//     users_pid = fork();
+//     if (users_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (users_pid == 0) {
+//         // Users child process
+//         close(users_pipe[READ_END]);
+//         // Perform connected users task and write results to pipe
+//         // ...
+//         close(users_pipe[WRITE_END]);
+//         exit(EXIT_SUCCESS);
+//     }
+
+//     machine_pid = fork();
+//     if (machine_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (machine_pid == 0) {
+//         // Machine child process
+//         logSessional(machine_pipe);
+//         exit(EXIT_SUCCESS);
+//     }
+
+//     cpu_pid = fork();
+//     if (cpu_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (cpu_pid == 0) {
+//         // CPU child process
+//         close(cpu_pipe[READ_END]);
+        
+//         cpu_sample_t cpu_utilization[samples];
+        
+//         for (int i = 0; i < samples; i++) {
+//             cpu_utilization[i].utilization = 100 * get_cpu_utilization(tdelay);
+//             cpu_utilization[i].num_bars = (int)(cpu_utilization[i].utilization / 0.32);
+            
+//             write(cpu_pipe[WRITE_END], &cpu_utilization[i], sizeof(cpu_sample_t));
+//             sleep(tdelay);
+//         }
+        
+//         close(cpu_pipe[WRITE_END]);
+        
+//         exit(EXIT_SUCCESS);
+//     }
+
+//     // Parent process
+//     // close(memory_pipe[WRITE_END]);
+//     // close(users_pipe[WRITE_END]);
+//     // close(machine_pipe[WRITE_END]);
+//     // close(cpu_pipe[WRITE_END]);
+
+
+//     // Read results from pipes and print them
+//     struct session_info info;
+//     cpu_sample_t cpu_utilization;
+//     mem_info_t mem_info;
+//     char users[1024];
+//     char machine[1024];
+
+//     for (int i = 0; i < samples; i++) {
+//             close(machine_pipe[WRITE_END]);
+//             read(machine_pipe[READ_END], &info, sizeof(info));
+//             printf("### Sessions/users ### \n");
+//             for (int j = 0; j < info.num_users; j++) {
+//                 printf("%s", info.users[j]);
+//             }
+//             sleep(tdelay);
+//         }
+//         close(machine_pipe[READ_END]);
+// }
+//         //PUT CODDE HERE
 
         //printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
 
