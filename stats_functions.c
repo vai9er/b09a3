@@ -359,7 +359,7 @@ void refresh23(int samples, int tdelay){
     //         printf("\t %.2f\n", cpu_utilization.utilization);
     // }
 
-        sleep(tdelay);
+        //sleep(tdelay);
     }
 }
 
