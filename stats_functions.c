@@ -246,8 +246,10 @@ void printMemUsage(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
 void refresh23(int samples, int tdelay){
     int machine_pipe[2];
     pid_t machine_pid;
+    int memory_pipe[2];
+    pid_t memory_pid;
 
-    if (pipe(machine_pipe) == -1) {
+    if (pipe(machine_pipe) == -1 || pipe(memory_pipe) == -1) {
         fprintf(stderr,"Pipe failed");
         exit(EXIT_FAILURE);
     }
@@ -258,6 +260,19 @@ void refresh23(int samples, int tdelay){
         exit(EXIT_FAILURE);
     } else if (machine_pid == 0) {
         logSessional(machine_pipe);
+        exit(EXIT_SUCCESS);
+    }
+
+    memory_pid = fork();
+    if (memory_pid < 0) {
+        fprintf(stderr,"Fork failed");
+        exit(EXIT_FAILURE);
+    } else if (memory_pid == 0) {
+        // Memory child process
+        close(memory_pipe[READ_END]);
+        // Perform memory utilization task and write results to pipe
+        printMemUsage(samples, tdelay, memory_pipe);
+        close(memory_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     } else {
         // Parent process
@@ -271,13 +286,14 @@ void refresh23(int samples, int tdelay){
             }
             
             struct mem_info mem_info;
-            read(machine_pipe[READ_END], &mem_info, sizeof(mem_info));
+            read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
             printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
             printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
             
             sleep(tdelay);
         }
         close(machine_pipe[READ_END]);
+        close(memory_pipe[READ_END]);
     }
 }
 // void refresh23(int samples, int tdelay){
