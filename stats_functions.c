@@ -23,10 +23,10 @@ struct mem_info {
     float memory_total;
 };
 
-void clear_screen() {
-  printf("\033[2J");  // clear entire screen
-  printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
-}
+// void clear_screen() {
+//   printf("\033[2J");  // clear entire screen
+//   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
+// }
 
 
 
