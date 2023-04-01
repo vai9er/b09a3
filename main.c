@@ -104,10 +104,10 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
 }
 
 //clears the screen with ANSI escape codes
-void clear_screen() {
-  printf("\033[2J");  // clear entire screen
-  printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
-}
+// void clear_screen() {
+//   printf("\033[2J");  // clear entire screen
+//   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
+// }
 
 // //function to print the menu
 // void seqFlag(int samples, int tdelay){
@@ -225,3 +225,5 @@ int main(int argc, char** argv){
 
     }
 }
+
+//print hello World

@@ -23,6 +23,11 @@ struct mem_info {
     float memory_total;
 };
 
+void clear_screen() {
+  printf("\033[2J");  // clear entire screen
+  printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
+}
+
 // void clear_screen() {
 //   printf("\033[2J");  // clear entire screen
 //   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
@@ -284,16 +289,18 @@ void refresh23(int samples, int tdelay){
         close(machine_pipe[WRITE_END]);
         
         for (int i = 0; i < samples; i++) {
+            clear_screen();
+            struct mem_info mem_info;
+            read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
+            printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
+            printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
             read(machine_pipe[READ_END], &info, sizeof(info));
+
             printf("### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
                 printf("%s", info.users[j]);
             }
             
-            struct mem_info mem_info;
-            read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
-            printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
-            printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
             
             sleep(tdelay);
         }
