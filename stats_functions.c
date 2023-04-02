@@ -493,7 +493,6 @@ void refresh2345(int samples, int tdelay){
         
         struct cpu_info cpu_info[samples];
 
-        printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
 
         for (int i = 0; i < mem_info.num_samples; i++) {
             read(cpu_pipe[READ_END], &cpu_info[i], sizeof(cpu_info[i]));
@@ -506,7 +505,8 @@ void refresh2345(int samples, int tdelay){
             float memory_used = systemInfo.totalram - systemInfo.freeram;
 
             printf("Memory usage: %.0f kilobytes\n", (memory_used / 1024)/1024);
-
+            printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
+            printf("---------------------------------------\n");
             printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
 
             float change = mem_info.memory_used[i] - ((i == 0) ? 0 : mem_info.memory_used[i-1]);
