@@ -221,7 +221,7 @@ int main(int argc, char** argv){
     } 
     else {
         //refresh-like output
-        refresh23(samples,tdelay);
+        refresh2345(samples,tdelay);
 
     }
 }
