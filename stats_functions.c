@@ -434,7 +434,7 @@ void refresh234(int samples, int tdelay){
 }
 
 void refresh2345(int samples, int tdelay){
-   int machine_pipe[2];
+    int machine_pipe[2];
     pid_t machine_pid;
     int memory_pipe[2];
     pid_t memory_pid;
