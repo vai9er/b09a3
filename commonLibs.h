@@ -15,3 +15,4 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <math.h>
+#include <signal.h>

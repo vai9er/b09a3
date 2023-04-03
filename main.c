@@ -1,6 +1,18 @@
 #include "commonLibs.h"
 #include "stats_functions.c"
 
+void handle_SIGTSTP(int signum){}
+
+void handle_SIGINT(int signum){
+    char response;
+    printf("\nDo you want to quit? [y/n] ");
+    scanf(" %c", &response);
+    if (response == 'y' || response == 'Y'){
+        // user wants to quit, terminate the program
+        exit(EXIT_SUCCESS);
+    }
+}
+
 //helper function that checks whether a CHAR* is an int
 //if it is, return 1, else return 0
 int isInt(char *str){
@@ -222,7 +234,7 @@ int main(int argc, char** argv){
     else {
         //refresh-like output
         graphicalRefresh(samples,tdelay);
-
+        //defaultOutput(samples, tdelay);
     }
 }
 
