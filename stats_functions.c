@@ -386,7 +386,7 @@ void graphicalRefresh(int samples, int tdelay){
             struct memory_display memory_display[samples];
             for (int j = 0; j < i; j++) {
                 float change = memory_usage[j+1] - memory_usage[j];
-                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
+                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\n", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
                 if (j == i - 1) {
                     if (change == 0) {
                         sprintf(memory_display[j].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
