@@ -29,7 +29,7 @@ int isInt(char *str){
 //this function parses the command line arguments. It takes in the argc and argv from main, and the pointers to the variables that will be changed.
 //it will change the variables to the values specified by the user, or to the default values if the user did not specify a value
 //it will also check for invalid arguments and print an error message if it finds one
-void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, int* samples, int* tdelay) {
+void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, int* samples, int* tdelay, int* graphics) {
     int positionalArgIndex = 0;
     for (int i = 1; i < argc; i++) {
         //here we check for the system and user flags
@@ -42,7 +42,12 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
         //check for the sequential flag
         else if (strcmp(argv[i], "--sequential") == 0) {
             *sequential = 1;
-        } 
+        }
+
+        else if (strcmp(argv[i], "--graphics") == 0) {
+            *graphics = 1;
+        }
+
         //check for the samples and tdelay flags
         else if (strncmp(argv[i], "--samples=", 10) == 0) {
             *samples = atoi(argv[i] + 10);
@@ -207,9 +212,10 @@ int main(int argc, char** argv){
     int samples = 10;
     int tdelay = 1;
     int sequential = 0;
+    int graphics = 0;
     
     //parse the arguments
-    parseArgs(argc, argv, &systemm, &user, &sequential, &samples, &tdelay);
+    parseArgs(argc, argv, &systemm, &user, &sequential, &samples, &tdelay, &graphics);
 
     //--system
     if (systemm == 1) {
@@ -232,9 +238,12 @@ int main(int argc, char** argv){
 
     } 
     else {
+        if(graphics == 1){
+            graphicalRefresh(samples, tdelay);
+        }
         //refresh-like output
-        graphicalRefresh(samples,tdelay);
-        //defaultOutput(samples, tdelay);
+        //graphicalRefresh(samples,tdelay);
+        defaultOutput(samples, tdelay);
     }
 }
 
