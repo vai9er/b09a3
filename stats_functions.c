@@ -548,17 +548,17 @@ void defaultOutput(int samples, int tdelay){
             printf("Number of cores: %d \n", get_nprocs());
             printf("total cpu use = %.2f%%\n", cpu_info[i].utilization);
 
-            for (int k = 0; k <= i; k++) {
-                if (cpu_info[k].num_bars > 0) {
-                    printf("\t");
-                    for (int j = 0; j < cpu_info[k].num_bars; j++) {
-                        printf("|");
-                    }
-                    printf(" %.2f\n", cpu_info[k].utilization);
-                } else {
-                    printf("\t %.2f\n", cpu_info[k].utilization);
-                }
-            }
+            // for (int k = 0; k <= i; k++) {
+            //     if (cpu_info[k].num_bars > 0) {
+            //         printf("\t");
+            //         for (int j = 0; j < cpu_info[k].num_bars; j++) {
+            //             printf("|");
+            //         }
+            //         printf(" %.2f\n", cpu_info[k].utilization);
+            //     } else {
+            //         printf("\t %.2f\n", cpu_info[k].utilization);
+            //     }
+            // }
 
             printMachineInfo();
 
