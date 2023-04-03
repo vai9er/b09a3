@@ -3,6 +3,8 @@
 #define READ_END 0
 #define WRITE_END 1
 #define MAX_USERS 100
+#include "helpers.c"
+
 
 typedef struct {
     double utilization;
@@ -25,112 +27,18 @@ struct mem_info {
     int num_samples;
 };
 
+struct cpu_info {
+    double utilization;
+    int num_bars;
+};
+
+struct memory_display {
+    char display[100];
+};
+
 void clear_screen() {
   printf("\033[2J");  // clear entire screen
   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
-}
-
-// void clear_screen() {
-//   printf("\033[2J");  // clear entire screen
-//   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
-// }
-
-
-
-//this function prints the number of cores on the system
-void logCores(){
-
-    printf("-------------------------------------\n");
-    printf("Number of cores: %ld\n", sysconf(_SC_NPROCESSORS_ONLN));
-    
-}
-
-unsigned sleep(unsigned sec);
-
-//struct to hold the cpu stats
-struct cpustat {
-    unsigned long t_user;
-    unsigned long t_nice;
-    unsigned long t_system;
-    unsigned long t_idle;
-    unsigned long t_iowait;
-    unsigned long t_irq;
-    unsigned long t_softirq;
-};
-
-//function to skip lines in a file
-void skip_lines(FILE *fp, int numlines)
-{
-    int cnt = 0;
-    char ch;
-    //while the counter is less than the number of lines to skip and the character is not the end of the file
-    while((cnt < numlines) && ((ch = getc(fp)) != EOF))
-    {
-        //if the character is a new line, increment the counter
-        if (ch == '\n')
-            cnt++;
-    }
-    return;
-}
-
-//function to get the cpu stats
-void get_stats(struct cpustat *st, int cpunum)
-{
-    //open the file
-    FILE *fp = fopen("/proc/stat", "r");
-    //lskip is the number of lines to skip
-    int lskip = cpunum+1;
-    //skip the lines
-    skip_lines(fp, lskip);
-    //read the file
-    char cpun[255];
-    //read the file and store the values in the struct
-    fscanf(fp, "%s %ld %ld %ld %ld %ld %ld %ld", cpun, &(st->t_user), &(st->t_nice), 
-        &(st->t_system), &(st->t_idle), &(st->t_iowait), &(st->t_irq),
-        &(st->t_softirq));
-    //close the file
-    fclose(fp);
-	return;
-}
-
-//function to calculate the cpu load
-double calculate_load(struct cpustat *prev, struct cpustat *cur)
-{
-    //calculate the idle and non idle times
-    int idle_prev = (prev->t_idle) + (prev->t_iowait);
-    int idle_cur = (cur->t_idle) + (cur->t_iowait);
-
-    //calculate the non idle times
-    int nidle_prev = (prev->t_user) + (prev->t_nice) + (prev->t_system) + (prev->t_irq) + (prev->t_softirq);
-    int nidle_cur = (cur->t_user) + (cur->t_nice) + (cur->t_system) + (cur->t_irq) + (cur->t_softirq);
-
-    //calculate the total times
-    int total_prev = idle_prev + nidle_prev;
-    int total_cur = idle_cur + nidle_cur;
-
-    //calculate the cpu load
-    double totald = (double) total_cur - (double) total_prev;
-    double idled = (double) idle_cur - (double) idle_prev;
-
-    //calculate the cpu percentage
-    double cpu_perc = (1000 * (totald - idled) / totald + 1) / 10;
-
-    //return the cpu percentage
-    return cpu_perc;
-}
-
-void logCpuUsage(){
-    //print the cpu usage
-    struct cpustat st0_0, st0_1;
-    //get the stats
-    get_stats(&st0_0, -1);
-    //sleep for 1 second
-    sleep(1);
-    //get the stats again
-    get_stats(&st0_1, -1);
-    //print the cpu usage
-    printf("CPU: %.2lf%%\n\n", calculate_load(&st0_0, &st0_1));
-    
 }
 
 
@@ -150,52 +58,7 @@ void printMachineInfo(){
 
 }
 
-void get_cpu_times(unsigned long long *idle, unsigned long long *total) {
-    FILE *fp;
-    unsigned long long user, nice, sys, irq, softirq, steal;
-    unsigned long long ioWait;
-
-    fp = fopen(PROC_STAT, "r");
-    if (fp == NULL) {
-        perror("Failed to open " PROC_STAT);
-        exit(EXIT_FAILURE);
-    }
-
-    fscanf(fp, "cpu %llu %llu %llu %llu %llu %llu %llu %llu", &user, &nice, &sys, idle, &ioWait, &irq, &softirq, &steal);
-    fclose(fp);
-
-    *total = user + nice + sys + *idle + ioWait + irq + softirq + steal;
-}
-
-double get_cpu_utilization(int tdelay) {
-    unsigned long long idle1, total1;
-    unsigned long long idle2, total2;
-
-    get_cpu_times(&idle1, &total1);
-    sleep(tdelay);
-    get_cpu_times(&idle2, &total2);
-
-    double idleDelta = idle2 - idle1;
-    double totalDelta = total2 - total1;
-
-    return 1.0 - idleDelta / totalDelta;
-}
-
-double get_cpu_utilization2() {
-    unsigned long long idle1, total1;
-    unsigned long long idle2, total2;
-
-    get_cpu_times(&idle1, &total1);
-    sleep(1);
-    get_cpu_times(&idle2, &total2);
-
-    double idleDelta = idle2 - idle1;
-    double totalDelta = total2 - total1;
-
-    return 1.0 - idleDelta / totalDelta;
-}
-
-//this function prints the users and sessions using the utmp file
+//this function prints(writes to pipe) the users and sessions using the utmp file
 //the utmp file is a file that stores information about the users and sessions
 void logSessional(int machine_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
     // Machine child process
@@ -231,7 +94,7 @@ void logSessional(int machine_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
     close(machine_pipe[WRITE_END]);
 }
 
-void printMemUsage(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
+void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
     //step 1: get system information
     struct sysinfo systemInfo;
     sysinfo(&systemInfo);
@@ -251,6 +114,16 @@ void printMemUsage(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
         write(pipefd[1], &info, sizeof(info));
 
         sleep(SLEEP_TIME);
+    }
+}
+
+void getCpuUsage(int samples, int tdelay, int pipe[]) {
+    struct cpu_info info[samples];
+    for (int i = 0; i < samples; i++) {
+        info[i].utilization = 100 * get_cpu_utilization(tdelay);
+        info[i].num_bars = (int)(info[i].utilization / 0.15);
+        write(pipe[WRITE_END], &info[i], sizeof(info[i]));
+        // sleep(tdelay);
     }
 }
 
@@ -282,7 +155,7 @@ void refresh23(int samples, int tdelay){
         // Memory child process
         close(memory_pipe[READ_END]);
         // Perform memory utilization task and write results to pipe
-        printMemUsage(samples, tdelay, memory_pipe);
+        getMemUtil(samples, tdelay, memory_pipe);
         close(memory_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     } else {
@@ -312,20 +185,7 @@ void refresh23(int samples, int tdelay){
     }
 }
 
-struct cpu_info {
-    double utilization;
-    int num_bars;
-};
 
-void printCPUUsage(int samples, int tdelay, int pipe[]) {
-    struct cpu_info info[samples];
-    for (int i = 0; i < samples; i++) {
-        info[i].utilization = 100 * get_cpu_utilization(tdelay);
-        info[i].num_bars = (int)(info[i].utilization / 0.32);
-        write(pipe[WRITE_END], &info[i], sizeof(info[i]));
-        // sleep(tdelay);
-    }
-}
 
 void refresh234(int samples, int tdelay){
     int machine_pipe[2];
@@ -357,7 +217,7 @@ void refresh234(int samples, int tdelay){
         // Memory child process
         close(memory_pipe[READ_END]);
         // Perform memory utilization task and write results to pipe
-        printMemUsage(samples, tdelay, memory_pipe);
+        getMemUtil(samples, tdelay, memory_pipe);
         close(memory_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     }
@@ -370,7 +230,7 @@ void refresh234(int samples, int tdelay){
         // CPU child process
         close(cpu_pipe[READ_END]);
         // Perform CPU utilization task and write results to pipe
-        printCPUUsage(samples, tdelay, cpu_pipe);
+        getCpuUsage(samples, tdelay, cpu_pipe);
         close(cpu_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     } else {
@@ -433,7 +293,7 @@ void refresh234(int samples, int tdelay){
     }
 }
 
-void refresh2345(int samples, int tdelay){
+void graphicalRefresh(int samples, int tdelay){
     int machine_pipe[2];
     pid_t machine_pid;
     int memory_pipe[2];
@@ -463,7 +323,7 @@ void refresh2345(int samples, int tdelay){
         // Memory child process
         close(memory_pipe[READ_END]);
         // Perform memory utilization task and write results to pipe
-        printMemUsage(samples, tdelay, memory_pipe);
+        getMemUtil(samples, tdelay, memory_pipe);
         close(memory_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     }
@@ -476,7 +336,7 @@ void refresh2345(int samples, int tdelay){
         // CPU child process
         close(cpu_pipe[READ_END]);
         // Perform CPU utilization task and write results to pipe
-        printCPUUsage(samples, tdelay, cpu_pipe);
+        getCpuUsage(samples, tdelay, cpu_pipe);
         close(cpu_pipe[WRITE_END]);
         exit(EXIT_SUCCESS);
     } else {
@@ -493,8 +353,10 @@ void refresh2345(int samples, int tdelay){
         
         struct cpu_info cpu_info[samples];
 
-
+        
+        float memory_usage[samples];
         for (int i = 0; i < mem_info.num_samples; i++) {
+            memory_usage[i] = mem_info.memory_used[i];
             read(cpu_pipe[READ_END], &cpu_info[i], sizeof(cpu_info[i]));
             clear_screen();
             printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
@@ -504,9 +366,36 @@ void refresh2345(int samples, int tdelay){
             float memory_total = systemInfo.totalram;
             float memory_used = systemInfo.totalram - systemInfo.freeram;
 
+              
             printf("Memory usage: %.0f kilobytes\n", (memory_used / 1024)/1024);
             printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
             printf("---------------------------------------\n");
+
+            struct memory_display memory_display[samples];
+            for (int j = 0; j < i; j++) {
+                float change = memory_usage[j+1] - memory_usage[j];
+                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
+                if (j == i - 1) {
+                    if (change == 0) {
+                        sprintf(memory_display[j].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    } else if (change > 0) {
+                        int num_hashes = change / (mem_info.memory_total / (samples*10));
+                        sprintf(memory_display[j].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[j].display + strlen(memory_display[j].display), "#");
+                        }
+                        sprintf(memory_display[j].display + strlen(memory_display[j].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    } else {
+                        int num_hashes = -change / (mem_info.memory_total / (samples*10));
+                        sprintf(memory_display[j].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[j].display + strlen(memory_display[j].display), "@");
+                        }
+                        sprintf(memory_display[j].display + strlen(memory_display[j].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    }
+                }
+                printf("%s", memory_display[j].display);
+            }
             printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
 
             float change = mem_info.memory_used[i] - ((i == 0) ? 0 : mem_info.memory_used[i-1]);
