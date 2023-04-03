@@ -233,8 +233,8 @@ int main(int argc, char** argv){
     } 
     else {
         //refresh-like output
-        graphicalRefresh(samples,tdelay);
-        //defaultOutput(samples, tdelay);
+        //graphicalRefresh(samples,tdelay);
+        defaultOutput(samples, tdelay);
     }
 }
 
