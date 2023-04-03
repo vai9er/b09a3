@@ -563,7 +563,7 @@ void defaultOutput(int samples, int tdelay){
             printMachineInfo();
 
         }
-        
+        free(mem_info.memory_used);
         close(machine_pipe[READ_END]);
         close(memory_pipe[READ_END]);
         close(cpu_pipe[READ_END]);
