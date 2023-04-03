@@ -500,7 +500,7 @@ void defaultOutput(int samples, int tdelay){
         struct mem_info mem_info;
         read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
         mem_info.memory_used = malloc(mem_info.num_samples * sizeof(float));
-        read(memory_pipe[READ_END], mem_info.memory_used, mem_info.num_samples * sizeof(float));
+        //read(memory_pipe[READ_END], mem_info.memory_used, mem_info.num_samples * sizeof(float));
 
         struct session_info info;
         close(machine_pipe[WRITE_END]);
@@ -539,6 +539,7 @@ void defaultOutput(int samples, int tdelay){
             for(int z = 0; z < samples - i; z++){
                 printf("\n");
             }
+            printf("---------------------------------------\n");
             printf("### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
                 printf("%s", info.users[j]);

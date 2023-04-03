@@ -240,6 +240,7 @@ int main(int argc, char** argv){
     else {
         if(graphics == 1){
             graphicalRefresh(samples, tdelay);
+            return 0;
         }
         //refresh-like output
         //graphicalRefresh(samples,tdelay);
