@@ -244,7 +244,9 @@ int main(int argc, char** argv){
         }
         //refresh-like output
         //graphicalRefresh(samples,tdelay);
-        defaultOutput(samples, tdelay);
+        //defaultOutput(samples, tdelay);
+        bruh(samples, tdelay);
+
     }
 }
 
