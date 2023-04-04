@@ -113,6 +113,7 @@ void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
     
     // Get total and used memory
     float memory_total = systemInfo.totalram;
+    write(pipefd[1], &memory_total, sizeof(memory_total));
 
     struct mem_info info;
     info.memory_total = memory_total;
@@ -160,6 +161,7 @@ void bruh(int samples, int tdelay){
         struct mem_info mem_info;
         mem_info.num_samples = samples;
         mem_info.memory_used = malloc(samples * sizeof(float));
+        read(memory_pipe[READ_END], &mem_info.memory_total, sizeof(mem_info.memory_total));
         float memory_usage[samples];
 
         for (int i = 0; i < samples; i++) {
