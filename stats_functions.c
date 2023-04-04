@@ -121,9 +121,8 @@ void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
 
     for (int i = 0; i < NUM_SAMPLES; i++) {
         sysinfo(&systemInfo);
-        info.memory_used[i] = systemInfo.totalram - systemInfo.freeram;
-
-        write(pipefd[1], &info, sizeof(info));
+        float memory_used = systemInfo.totalram - systemInfo.freeram;
+        write(pipefd[1], &memory_used, sizeof(memory_used));
 
         //sleep(SLEEP_TIME);
     }
@@ -159,14 +158,13 @@ void bruh(int samples, int tdelay){
     else{
         close(memory_pipe[WRITE_END]);
         struct mem_info mem_info;
-        read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
-        mem_info.memory_used = malloc(mem_info.num_samples * sizeof(float));
+        mem_info.num_samples = samples;
+        mem_info.memory_used = malloc(samples * sizeof(float));
         float memory_usage[samples];
 
-
-        for (int i = 0; i < mem_info.num_samples; i++) {
+        for (int i = 0; i < samples; i++) {
             clear_screen();
-            read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
+            read(memory_pipe[READ_END], &mem_info.memory_used[i], sizeof(mem_info.memory_used[i]));
             memory_usage[i] = mem_info.memory_used[i];
 
             printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
