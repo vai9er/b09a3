@@ -125,7 +125,7 @@ void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
         float memory_used = systemInfo.totalram - systemInfo.freeram;
         write(pipefd[1], &memory_used, sizeof(memory_used));
 
-        //sleep(SLEEP_TIME);
+        sleep(SLEEP_TIME);
     }
 
     // Deallocate memory
@@ -183,6 +183,7 @@ void bruh(int samples, int tdelay){
 
             struct memory_display memory_display[samples];
             for (int j = 0; j < i; j++) {
+                
                 float change = memory_usage[j+1] - memory_usage[j];
                 printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\n", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
             }
@@ -205,63 +206,63 @@ void getCpuUsage(int samples, int tdelay, int pipe[]) {
     }
 }
 
-void refresh23(int samples, int tdelay){
-    int machine_pipe[2];
-    pid_t machine_pid;
-    int memory_pipe[2];
-    pid_t memory_pid;
+// void refresh23(int samples, int tdelay){
+//     int machine_pipe[2];
+//     pid_t machine_pid;
+//     int memory_pipe[2];
+//     pid_t memory_pid;
 
-    if (pipe(machine_pipe) == -1 || pipe(memory_pipe) == -1) {
-        fprintf(stderr,"Pipe failed");
-        exit(EXIT_FAILURE);
-    }
+//     if (pipe(machine_pipe) == -1 || pipe(memory_pipe) == -1) {
+//         fprintf(stderr,"Pipe failed");
+//         exit(EXIT_FAILURE);
+//     }
 
-    machine_pid = fork();
-    if (machine_pid < 0) {
-        fprintf(stderr,"Fork failed");
-        exit(EXIT_FAILURE);
-    } else if (machine_pid == 0) {
-        logSessional(machine_pipe, samples, tdelay);
-        exit(EXIT_SUCCESS);
-    }
+//     machine_pid = fork();
+//     if (machine_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (machine_pid == 0) {
+//         logSessional(machine_pipe, samples, tdelay);
+//         exit(EXIT_SUCCESS);
+//     }
 
-    memory_pid = fork();
-    if (memory_pid < 0) {
-        fprintf(stderr,"Fork failed");
-        exit(EXIT_FAILURE);
-    } else if (memory_pid == 0) {
-        // Memory child process
-        close(memory_pipe[READ_END]);
-        // Perform memory utilization task and write results to pipe
-        getMemUtil(samples, tdelay, memory_pipe);
-        close(memory_pipe[WRITE_END]);
-        exit(EXIT_SUCCESS);
-    } else {
-        // Parent process
-        struct session_info info;
-        close(machine_pipe[WRITE_END]);
+//     memory_pid = fork();
+//     if (memory_pid < 0) {
+//         fprintf(stderr,"Fork failed");
+//         exit(EXIT_FAILURE);
+//     } else if (memory_pid == 0) {
+//         // Memory child process
+//         close(memory_pipe[READ_END]);
+//         // Perform memory utilization task and write results to pipe
+//         getMemUtil(samples, tdelay, memory_pipe);
+//         close(memory_pipe[WRITE_END]);
+//         exit(EXIT_SUCCESS);
+//     } else {
+//         // Parent process
+//         struct session_info info;
+//         close(machine_pipe[WRITE_END]);
         
-        for (int i = 0; i < samples; i++) {
-            clear_screen();
-            struct mem_info mem_info;
-            read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
-            printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
-            // printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
-            read(machine_pipe[READ_END], &info, sizeof(info));
+//         for (int i = 0; i < samples; i++) {
+//             clear_screen();
+//             struct mem_info mem_info;
+//             read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
+//             printf("Memory usage: %ld kilobytes\n", mem_info.memory_usage_kb);
+//             // printf("%.2f GB / %.2f GB\n", mem_info.memory_used / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024));
+//             read(machine_pipe[READ_END], &info, sizeof(info));
 
-            printf("### Sessions/users ### \n");
-            for (int j = 0; j < info.num_users; j++) {
-                printf("%s", info.users[j]);
-            }
+//             printf("### Sessions/users ### \n");
+//             for (int j = 0; j < info.num_users; j++) {
+//                 printf("%s", info.users[j]);
+//             }
             
             
-            sleep(tdelay);
-        }
+//             sleep(tdelay);
+//         }
         
-        close(machine_pipe[READ_END]);
-        close(memory_pipe[READ_END]);
-    }
-}
+//         close(machine_pipe[READ_END]);
+//         close(memory_pipe[READ_END]);
+//     }
+// }
 
 
 
@@ -316,23 +317,29 @@ void graphicalRefresh(int samples, int tdelay){
     } else {
         // Parent process
         close(memory_pipe[WRITE_END]);
-
         struct mem_info mem_info;
-        read(memory_pipe[READ_END], &mem_info, sizeof(mem_info));
-        mem_info.memory_used = malloc(mem_info.num_samples * sizeof(float));
-        read(memory_pipe[READ_END], mem_info.memory_used, mem_info.num_samples * sizeof(float));
+        mem_info.num_samples = samples;
+        mem_info.memory_used = malloc(samples * sizeof(float));
+        read(memory_pipe[READ_END], &mem_info.memory_total, sizeof(mem_info.memory_total));
+        float memory_usage[samples];
+
 
         struct session_info info;
         close(machine_pipe[WRITE_END]);
         
+
         struct cpu_info cpu_info[samples];
 
-        
-        float memory_usage[samples];
         for (int i = 0; i < mem_info.num_samples; i++) {
-            memory_usage[i] = mem_info.memory_used[i];
-            read(cpu_pipe[READ_END], &cpu_info[i], sizeof(cpu_info[i]));
             clear_screen();
+
+            read(memory_pipe[READ_END], &mem_info.memory_used[i], sizeof(mem_info.memory_used[i]));
+            memory_usage[i] = mem_info.memory_used[i];
+
+
+            read(cpu_pipe[READ_END], &cpu_info[i], sizeof(cpu_info[i]));
+
+
             printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
             struct sysinfo systemInfo;
             sysinfo(&systemInfo);
@@ -348,7 +355,7 @@ void graphicalRefresh(int samples, int tdelay){
             struct memory_display memory_display[samples];
             for (int j = 0; j < i; j++) {
                 float change = memory_usage[j+1] - memory_usage[j];
-                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
+                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
                 if (j == i - 1) {
                     if (change == 0) {
                         sprintf(memory_display[j].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
