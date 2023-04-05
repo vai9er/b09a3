@@ -6,14 +6,16 @@ void clear_screen() {
     printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
 }
 
-typedef struct {
-    double utilization;
-    int num_bars;
-} cpu_sample_t;
+struct mem_info {
+    unsigned long long memory_usage_kb;
+    float *memory_used;
+    float memory_total;
+    int num_samples;
+};
 
-typedef struct {
-    float prev_memory_used;
-} mem_info_t;
+struct memory_display {
+    char display[10000];
+};
 
 struct session_info {
     char users[100][100];

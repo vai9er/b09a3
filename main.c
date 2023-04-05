@@ -31,9 +31,7 @@ int main(int argc, char** argv){
 
     //--system
     if (systemm == 1) {
-        if(graphics == 1){
-            ///
-        }
+        systemmm(samples, tdelay, graphics);
     } 
 
     //--user

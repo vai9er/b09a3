@@ -32,14 +32,14 @@ void printMachineInfo(){
 
 //this function prints(writes to pipe) the users and sessions using the utmp file
 //the utmp file is a file that stores information about the users and sessions
-void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
+void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME) {
     // Machine child process
     close(users_pipe[READ_END]);
 
     for (int i = 0; i < NUM_SAMPLES; i++) {
         // Perform machine information task and write results to pipe
         struct session_info info;
-        info.num_users = 0;
+        memset(&info, 0, sizeof(info)); // Initialize info structure to zero
 
         // get sessional information
         struct utmp *userSession;
@@ -48,7 +48,7 @@ void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
         setutent();
 
         //print the sessions
-        while ( (userSession = getutent()) != NULL) {
+        while ((userSession = getutent()) != NULL) {
             if (userSession->ut_type == USER_PROCESS) {
                 sprintf(info.users[info.num_users], " %s   %s (%s)\n", userSession->ut_user, userSession->ut_line, userSession->ut_host);
                 info.num_users++;
@@ -59,23 +59,13 @@ void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME){
         endutent();
 
         write(users_pipe[WRITE_END], &info, sizeof(info));
-        
-        // sleep(SLEEP_TIME);
+
+        sleep(SLEEP_TIME);
     }
 
     close(users_pipe[WRITE_END]);
 }
 
-struct mem_info {
-    unsigned long long memory_usage_kb;
-    float *memory_used;
-    float memory_total;
-    int num_samples;
-};
-
-struct memory_display {
-    char display[100];
-};
 
 void getMachineInfo(int pipefd[2]) {
     MachineInfo info;
@@ -277,7 +267,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
                 printf("%s\n", memory_display[j].display);
             }
             if(graphics == 1){
-                if(i == 0){printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB |o 0.00 (%.2f) \n", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));}
+                if(i == 0){printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB |o 0.00 (%.2f) ", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));}
                 else{    
                     float change = memory_usage[i] - memory_usage[i-1];
                     printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[i-1] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i-1] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
@@ -353,4 +343,125 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
     }
 }
 
+
+
+void systemmm(int samples, int tdelay, int graphics){
+    int memory_pipe[2];
+    pid_t memory_pid;
+    
+
+    memory_pid = fork();
+    if (memory_pid < 0) {
+        fprintf(stderr,"Memory util fork failed");
+        exit(EXIT_FAILURE);
+    } else if (memory_pid == 0) {
+        // Memory child process
+        close(memory_pipe[READ_END]);
+        // Perform memory utilization task and write results to pipe
+
+        getMemUtil(samples, tdelay, memory_pipe);
+        
+        close(memory_pipe[WRITE_END]);
+        exit(EXIT_SUCCESS);
+    } else {
+        // Parent process
+        close(memory_pipe[WRITE_END]); 
+        struct mem_info mem_info;
+        mem_info.num_samples = samples;
+        mem_info.memory_used = malloc(samples * sizeof(float));
+        read(memory_pipe[READ_END], &mem_info.memory_total, sizeof(mem_info.memory_total));
+        float memory_usage[samples];
+
+
+        struct session_info info;
+        
+
+        struct cpu_info cpu_info[samples];
+
+
+        MachineInfo Minfo;
+
+        for (int i = 0; i < mem_info.num_samples; i++) {
+            clear_screen();
+
+            read(memory_pipe[READ_END], &mem_info.memory_used[i], sizeof(mem_info.memory_used[i]));
+            memory_usage[i] = mem_info.memory_used[i];
+
+
+
+
+            printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
+            struct sysinfo systemInfo;
+            sysinfo(&systemInfo);
+
+            float memory_total = systemInfo.totalram;
+            float memory_used = systemInfo.totalram - systemInfo.freeram;
+
+              
+            printf("Memory usage: %.0f kilobytes\n", (memory_used / 1024)/1024);
+            printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
+            printf("---------------------------------------\n");
+
+            struct memory_display memory_display[samples];
+            memset(memory_display, 0, sizeof(memory_display));
+            for (int j = 0; j < i; j++) {
+                float change = memory_usage[j+1] - memory_usage[j];
+                printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
+                if (j == i - 1 && graphics == 1) {
+                    if (change == 0) {
+                        sprintf(memory_display[j].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    } else if (change > 0) {
+                        int num_hashes = change / (mem_info.memory_total / (samples*8));
+                        sprintf(memory_display[j].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[j].display + strlen(memory_display[j].display), "#");
+                        }
+                        sprintf(memory_display[j].display + strlen(memory_display[j].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    } else {
+                        int num_hashes = -change / (mem_info.memory_total / (samples*10));
+                        sprintf(memory_display[j].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[j].display + strlen(memory_display[j].display), "@");
+                        }
+                        sprintf(memory_display[j].display + strlen(memory_display[j].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[j+1] / (1024 * 1024 * 1024));
+                    }
+                }
+                printf("%s\n", memory_display[j].display);
+            }
+            if(graphics == 1){
+                if(i == 0){printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB |o 0.00 (%.2f) ", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));}
+                else{    
+                    float change = memory_usage[i] - memory_usage[i-1];
+                    printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[i-1] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i-1] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
+                    if (change == 0) {
+                        sprintf(memory_display[i-1].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
+                    } else if (change > 0) {
+                        int num_hashes = change / (mem_info.memory_total / (samples*8));
+                        sprintf(memory_display[i-1].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "#");
+                        }
+                        sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
+                    } else {
+                        int num_hashes = -change / (mem_info.memory_total / (samples*10));
+                        sprintf(memory_display[i-1].display, " |");
+                        for (int k = 0; k < num_hashes; k++) {
+                            sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "@");
+                        }
+                        sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
+                    }
+                    printf("%s\n", memory_display[i].display);
+                }
+            }
+
+            else{printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB", mem_info.memory_used[i] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));}
+            if (i == samples){
+                exit(EXIT_SUCCESS);
+            }
+            sleep(1);
+        }
+        free(mem_info.memory_used);
+        close(memory_pipe[READ_END]);
+    }
+}
 

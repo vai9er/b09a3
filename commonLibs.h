@@ -16,3 +16,4 @@
 #include <sys/types.h>
 #include <math.h>
 #include <signal.h>
+#include <limits.h>
