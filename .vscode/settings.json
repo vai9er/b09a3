@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "commonlibs.h": "c"
+        "commonlibs.h": "c",
+        "utsname.h": "c"
     }
 }

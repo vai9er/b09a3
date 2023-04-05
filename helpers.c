@@ -1,11 +1,38 @@
 #include "commonLibs.h"
+#define PROC_STAT "/proc/stat"
 
-// void clear_screen() {
-//   printf("\033[2J");  // clear entire screen
-//   printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
-// }
+void clear_screen() {
+    printf("\033[2J");  // clear entire screen
+    printf("\033[%d;%dH", 0, 0);  // move cursor to the top-left corner
+}
+
+typedef struct {
+    double utilization;
+    int num_bars;
+} cpu_sample_t;
+
+typedef struct {
+    float prev_memory_used;
+} mem_info_t;
+
+struct session_info {
+    char users[100][100];
+    int num_users;
+};
 
 
+struct cpu_info {
+    double utilization;
+    int num_bars;
+};
+
+typedef struct {
+    char sysname[65];
+    char nodename[65];
+    char release[65];
+    char version[65];
+    char machine[65];
+} MachineInfo;
 
 //this function prints the number of cores on the system
 void logCores(){
