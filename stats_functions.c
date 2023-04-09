@@ -36,10 +36,10 @@ void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME) {
     // Machine child process
     close(users_pipe[READ_END]);
 
+    struct session_info info;
+    memset(&info, 0, sizeof(info)); // Initialize info structure to zero
     for (int i = 0; i < NUM_SAMPLES; i++) {
         // Perform machine information task and write results to pipe
-        struct session_info info;
-        memset(&info, 0, sizeof(info)); // Initialize info structure to zero
 
         // get sessional information
         struct utmp *userSession;
@@ -60,7 +60,7 @@ void logSessional(int users_pipe[2], int NUM_SAMPLES, int SLEEP_TIME) {
 
         write(users_pipe[WRITE_END], &info, sizeof(info));
 
-        sleep(SLEEP_TIME);
+        //sleep(SLEEP_TIME);
     }
 
     close(users_pipe[WRITE_END]);
@@ -82,16 +82,6 @@ void getMachineInfo(int pipefd[2]) {
 void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
     //step 1: get system information
     struct sysinfo systemInfo;
-    sysinfo(&systemInfo);
-    
-    // Get total and used memory
-    float memory_total = systemInfo.totalram;
-    write(pipefd[1], &memory_total, sizeof(memory_total));
-
-    struct mem_info info;
-    info.memory_total = memory_total;
-    info.num_samples = NUM_SAMPLES;
-    info.memory_used = malloc(NUM_SAMPLES * sizeof(float));
 
     for (int i = 0; i < NUM_SAMPLES; i++) {
         sysinfo(&systemInfo);
@@ -100,9 +90,6 @@ void getMemUtil(int NUM_SAMPLES, int SLEEP_TIME, int pipefd[2]) {
 
         sleep(SLEEP_TIME);
     }
-
-    // Deallocate memory
-    free(info.memory_used);
 }
 
 
@@ -118,22 +105,6 @@ void getCpuUsage(int samples, int tdelay, int pipe[]) {
 }
 
 
-
-
-void handle_sigint(int sig) {
-    char c;
-    printf("\nReceived SIGINT signal. Do you want to quit? [y/n] ");
-    c = getchar();
-    if (c == 'y' || c == 'Y') {
-        exit(0);
-    } else {
-         // consume the newline character
-    }
-}
-
-void handle_sigtstp(int sig) {
-    printf("\nReceived SIGTSTP signal. This program cannot be run in the background.\n");
-}
 
 void graphicalRefresh(int samples, int tdelay, int graphics){
     int users_pipe[2];
@@ -219,6 +190,11 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         MachineInfo Minfo;
         read(machine_pipe[0], &Minfo, sizeof(MachineInfo));
 
+        struct sysinfo systemInfo;
+        sysinfo(&systemInfo);
+
+        struct memory_display memory_display[samples];
+        
         for (int i = 0; i < mem_info.num_samples; i++) {
             clear_screen();
 
@@ -230,8 +206,6 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
 
 
             printf("Nbr of samples: %d -- every %d secs\n", samples, tdelay);
-            struct sysinfo systemInfo;
-            sysinfo(&systemInfo);
 
             float memory_total = systemInfo.totalram;
             float memory_used = systemInfo.totalram - systemInfo.freeram;
@@ -241,7 +215,6 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
             printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
             printf("---------------------------------------\n");
 
-            struct memory_display memory_display[samples];
             for (int j = 0; j < i; j++) {
                 float change = memory_usage[j+1] - memory_usage[j];
                 printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[j] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[j] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
@@ -296,9 +269,9 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
             
             read(users_pipe[READ_END], &info, sizeof(info));
 
-            for(int z = 0; z < samples - i; z++){
-                printf("\n");
-            }
+            // for(int z = 0; z < samples - i; z++){
+            //     printf("\n");
+            // }
             printf("### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
                 printf("%s", info.users[j]);
@@ -329,10 +302,6 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
             printf("MACHINE: %s \n", Minfo.machine);
             printf("---------------------------------------\n");
             
-
-            if (i == samples){
-                exit(EXIT_SUCCESS);
-            }
         }
         free(mem_info.memory_used);
         close(users_pipe[READ_END]);

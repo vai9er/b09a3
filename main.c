@@ -52,8 +52,10 @@ int main(int argc, char** argv){
 
     } 
     else {
-        graphicalRefresh(samples, tdelay, graphics);
 
+        //signal(SIGINT, handle_SIGINT);
+        graphicalRefresh(samples, tdelay, graphics);
+        //systemmm(samples, tdelay, graphics);
     }
 }
 
