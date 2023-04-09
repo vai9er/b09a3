@@ -308,7 +308,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
             // for(int z = 0; z < samples - i; z++){
             //     printf("\n");
             // }
-            printf("### Sessions/users ### \n");
+            printf("\n### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
                 printf("%s", info.users[j]);
             }
