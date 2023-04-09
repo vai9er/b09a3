@@ -273,21 +273,29 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
                     float change = memory_usage[i] - memory_usage[i-1];
                     printf("%.2f GB / %.2f GB  -- %.2f GB / %.2f GB\t", mem_info.memory_used[i-1] / (1024 * 1024 * 1024), mem_info.memory_total / (1024 * 1024 * 1024), mem_info.memory_used[i-1] / (1024 * 1024 * 1024), (mem_info.memory_total + systemInfo.totalswap) / (1024 * 1024 * 1024));
                     if (change == 0) {
+                        printf(memory_display[i-1].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
                         sprintf(memory_display[i-1].display, " |o %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
                     } else if (change > 0) {
                         int num_hashes = change / (mem_info.memory_total / (samples*8));
+                        printf(memory_display[i-1].display, " |");
                         sprintf(memory_display[i-1].display, " |");
                         for (int k = 0; k < num_hashes; k++) {
+                            printf(memory_display[i-1].display + strlen(memory_display[i-1].display), "#");
                             sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "#");
                         }
+                        printf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
                         sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
                     } else {
                         int num_hashes = -change / (mem_info.memory_total / (samples*10));
+                        printf(memory_display[i-1].display, " |");
                         sprintf(memory_display[i-1].display, " |");
                         for (int k = 0; k < num_hashes; k++) {
+                            printf(memory_display[i-1].display + strlen(memory_display[i-1].display), "@");
                             sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "@");
                         }
+                        printf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
                         sprintf(memory_display[i-1].display + strlen(memory_display[i-1].display), "* %.2f (%.2f)\n", change / (1024 * 1024 * 1024), memory_usage[i] / (1024 * 1024 * 1024));
+                        
                     }
                     printf("%s\n", memory_display[i].display);
                 }
