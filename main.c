@@ -40,12 +40,12 @@ int main(int argc, char** argv){
     }
     //--system
     if (systemm == 1) {
-        systemRefresh(samples,tdelay,sequential);
+        systemRefresh(samples,tdelay,graphics,sequential);
     } 
 
     //--user
     else if (user == 1) {
-        usersRefresh(samples, tdelay, graphics, sequential);
+        usersRefresh(samples, tdelay, sequential);
     } 
     else {
         signal(SIGINT, sigint_handler);
