@@ -36,6 +36,10 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
 
         //check for the samples and tdelay flags
         else if (strncmp(argv[i], "--samples=", 10) == 0) {
+            if(positionalArgIndex != 0){
+                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
+                exit(1);
+            }
             *samples = atoi(argv[i] + 10);
             //here we check if the user specified a value for samples that is less than 1
             if (*tdelay <1){
@@ -48,14 +52,14 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
                 exit(1);
             }
             
-            if(positionalArgIndex != 0){
-                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
-                exit(1);
-            }
 
         }
         //here we check if the user specified a value for tdelay that is less than 1 
          else if (strncmp(argv[i], "--tdelay=", 9) == 0) {
+            if(positionalArgIndex != 0){
+                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
+                exit(1);
+            }
             *tdelay = atoi(argv[i] + 9);
             //here we check if the user specified a value for tdelay that is less than 1
             if (*tdelay <1){
@@ -65,10 +69,6 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
             //here we check if the user specified a value for tdelay that is not an int
             if (isInt(argv[i] + 9) == 0){
                 printf("Invalid argument: %s -- not an int\n", argv[i]);
-                exit(1);
-            }
-            if(positionalArgIndex != 0){
-                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
                 exit(1);
             }
         } 
