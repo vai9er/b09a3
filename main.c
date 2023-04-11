@@ -35,9 +35,10 @@ int main(int argc, char** argv){
     parseArgs(argc, argv, &systemm, &user, &sequential, &samples, &tdelay, &graphics);
 
     if(systemm == 1 && user == 1){
-        printf("Error: Cannot have both --systemm and --user\n");
+        printf("Error: Cannot have both --system and --user\n");
         exit(1);
     }
+
     //--system
     if (systemm == 1) {
         systemRefresh(samples,tdelay,graphics,sequential);
@@ -45,6 +46,7 @@ int main(int argc, char** argv){
 
     //--user
     else if (user == 1) {
+        printf("WARNING: No Graphics to generate for --user, but still a valid arguement\n");
         usersRefresh(samples, tdelay, sequential);
     } 
     else {
