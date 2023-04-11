@@ -13,6 +13,22 @@
 #include <sys/sysinfo.h>
 #define SIGTSTP 20
 #include <setjmp.h>
+#include <sys/prctl.h>
+
+
+volatile sig_atomic_t quit = 0;
+
+void sigint_handler(int sig) {
+    char c;
+    signal(sig, SIG_IGN);
+    printf("\nDo you really want to quit? [y/n] ");
+    c = getchar();
+    if (c == 'y' || c == 'Y') {
+        quit = 1;
+    } else {
+        signal(SIGINT, sigint_handler);
+    }
+}
 
 //MACHINEINFO
 // This function prints the machine information of the system. using the uname() function, we can get the system information and print it out.
@@ -146,9 +162,32 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
     int machine_pipe[2];
     pid_t machine_pid;
 
+    pid_t watchdog_pid;
     if (pipe(users_pipe) == -1 || pipe(memory_pipe) == -1 || pipe(cpu_pipe) == -1 || pipe(machine_pipe) == -1) {
         fprintf(stderr,"Pipe failed");
         exit(EXIT_FAILURE);
+    }
+
+    signal(SIGINT, sigint_handler);
+
+    watchdog_pid = fork();
+    if (watchdog_pid < 0) {
+        fprintf(stderr,"Watchdog fork failed");
+        exit(EXIT_FAILURE);
+    } else if (watchdog_pid == 0) {
+        while (1) {
+            // Check if parent process is still alive
+            if (getppid() == 1) {
+                // Parent process has died, terminate all child processes and exit
+                kill(users_pid, SIGTERM);
+                kill(memory_pid, SIGTERM);
+                kill(cpu_pid, SIGTERM);
+                kill(machine_pid, SIGTERM);
+                exit(EXIT_SUCCESS);
+            }
+
+            sleep(tdelay);
+        }
     }
 
     users_pid = fork();
@@ -156,6 +195,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         fprintf(stderr,"Users/Sessions fork failed");
         exit(EXIT_FAILURE);
     } else if (users_pid == 0) {
+    
         logSessional(users_pipe, samples, tdelay);
         exit(EXIT_SUCCESS);
     }
@@ -165,6 +205,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         fprintf(stderr,"Memory util fork failed");
         exit(EXIT_FAILURE);
     } else if (memory_pid == 0) {
+        
         // Memory child process
         close(memory_pipe[READ_END]);
         // Perform memory utilization task and write results to pipe
@@ -181,6 +222,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         exit(EXIT_FAILURE);
     }
     else if (machine_pid == 0){
+        
         close(machine_pipe[0]); // close unused read end
         getMachineInfo(machine_pipe);
         close(machine_pipe[1]); // close write end after writing
@@ -192,6 +234,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         fprintf(stderr,"Cpu util fork failed");
         exit(EXIT_FAILURE);
     } else if (cpu_pid == 0) {
+        
         // CPU child process
         close(cpu_pipe[READ_END]);
         // Perform CPU utilization task and write results to pipe
@@ -225,7 +268,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
         float memory_total = systemInfo.totalram;
         float memory_used = systemInfo.totalram - systemInfo.freeram;
 
-        for (int i = 0; i < mem_info.num_samples; i++) {
+        for (int i = 0; i < mem_info.num_samples && quit!= 1; i++) {
             clear_screen();
 
             read(memory_pipe[READ_END], &mem_info.memory_used[i], sizeof(mem_info.memory_used[i]));

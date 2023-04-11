@@ -52,7 +52,7 @@ int main(int argc, char** argv){
 
     } 
     else {
-
+        signal(SIGINT, sigint_handler);
         //signal(SIGINT, handle_SIGINT);
         graphicalRefresh(samples, tdelay, graphics);
         //systemmm(samples, tdelay, graphics);
