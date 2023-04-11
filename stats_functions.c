@@ -242,6 +242,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics){
             printf("### Memory ### (Phys.Used/Tot -- Virtual Used/Tot)\n");
             printf("---------------------------------------\n");
 
+
             struct memory_display memory_display[samples];
             for (int j = 0; j < i; j++) {
                 float change = memory_usage[j+1] - memory_usage[j];

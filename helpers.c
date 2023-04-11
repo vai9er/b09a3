@@ -14,7 +14,7 @@ struct mem_info {
 };
 
 struct memory_display {
-    char display[10000];
+    char display[1000];
 };
 
 struct session_info {
