@@ -17,6 +17,8 @@ int isInt(char *str){
 //it will also check for invalid arguments and print an error message if it finds one
 void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, int* samples, int* tdelay, int* graphics) {
     int positionalArgIndex = 0;
+    int sampleFlag = 0;
+    int tdelFlag = 0;
     for (int i = 1; i < argc; i++) {
         //here we check for the system and user flags
         if (strcmp(argv[i], "--system") == 0) {
@@ -41,6 +43,7 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
                 exit(1);
             }
             *samples = atoi(argv[i] + 10);
+            sampleFlag = 1;
             //here we check if the user specified a value for samples that is less than 1
             if (*tdelay <1){
                 printf("Invalid arguement: %s\n", argv[i]);
@@ -61,6 +64,7 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
                 exit(1);
             }
             *tdelay = atoi(argv[i] + 9);
+            tdelFlag = 1;
             //here we check if the user specified a value for tdelay that is less than 1
             if (*tdelay <1){
                 printf("Invalid arguement: %s\n", argv[i]);
@@ -74,6 +78,11 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
         } 
         //here we check for positional arguments
         else if (positionalArgIndex == 0) {
+
+            if (tdelFlag == 1 || sampleFlag == 1){
+                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
+                exit(1);
+            }
             int value = atoi(argv[i]);
             if (value <= 0) {
                 //here we check if the user specified a value for samples that is less than 1
@@ -90,6 +99,10 @@ void parseArgs(int argc, char** argv, int* systemm, int* user, int* sequential, 
         } 
         //here we check for positional arguments
         else if (positionalArgIndex == 1) {
+            if (tdelFlag == 1 || sampleFlag == 1){
+                printf("Invalid argument: Cannot have both positional arguement and --samples/--tdelay\n");
+                exit(1);
+            }
             int value = atoi(argv[i]);
             if (value <= 0) {
                 //here we check if the user specified a value for tdelay that is less than 1
