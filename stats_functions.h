@@ -368,6 +368,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics, int sequential){
              for(int z = 0; z < samples - i; z++){
                  printf("\n");
              }
+            printf("---------------------------------------\n");
             printf("\n### Sessions/users ### \n");
             for (int j = 0; j < info.num_users; j++) {
                 printf("%s", info.users[j]);
@@ -390,6 +391,7 @@ void graphicalRefresh(int samples, int tdelay, int graphics, int sequential){
                     }
                 }
             }
+            printf("---------------------------------------\n");
             printf("### System Information ### \n");
             printf("SYSTEM NAME: %s \n", Minfo.sysname);
             printf("NODE NAME: %s \n", Minfo.nodename);
